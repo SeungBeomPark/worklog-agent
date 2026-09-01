@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${editMode} ? '업무일지 수정' : '업무일지 작성'">업무일지 작성</title>
+    <style>
+        body { font-family: -apple-system, "Malgun Gothic", sans-serif; max-width: 640px; margin: 30px auto; padding: 0 16px; color: #222; }
+        h1 { font-size: 20px; }
+        label { display: block; margin: 14px 0 4px; font-weight: bold; font-size: 14px; }
+        input[type=text], input[type=date], textarea, select {
+            width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;
+        }
+        textarea { min-height: 140px; resize: vertical; }
+        .row { margin-bottom: 8px; }
+        .btns { margin-top: 20px; display: flex; gap: 10px; }
+        .btn { display: inline-block; padding: 8px 16px; background: #2b6cb0; color: #fff; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; font-size: 14px; }
+        .btn-secondary { background: #718096; }
+        .hint { color: #888; font-size: 12px; margin-top: 4px; }
+    </style>
+</head>
+<body>
+<h1 th:text="${editMode} ? '업무일지 수정' : '업무일지 작성'">업무일지 작성</h1>
+
+<form th:action="@{/worklogs/save}" method="post">
+    <div class="row">
+        <label for="date">날짜</label>
+        <!-- 수정 모드에서는 날짜를 키로 쓰므로 읽기전용 -->
+        <input type="date" id="date" name="date"
+               th:value="${entry.date()}"
+               th:readonly="${editMode}" required/>
+        <div class="hint" th:if="${editMode}">수정 모드에서는 날짜를 변경할 수 없습니다.</div>
+    </div>
+
+    <div class="row">
+        <label for="type">업무유형</label>
+        <select id="type" name="type">
+            <option value="프로젝트" th:selected="${entry.type()} == '프로젝트'">프로젝트</option>
+            <option value="휴가" th:selected="${entry.type()} == '휴가'">휴가</option>
+            <option value="교육" th:selected="${entry.type()} == '교육'">교육</option>
+            <option value="기타" th:selected="${entry.type()} == '기타'">기타</option>
+        </select>
+    </div>
+
+    <div class="row">
+        <label for="project">프로젝트</label>
+        <input type="text" id="project" name="project" th:value="${entry.project()}"
+               placeholder="프로젝트명 (휴가면 비워두세요)"/>
+    </div>
+
+    <div class="row">
+        <label for="content">업무 내용</label>
+        <textarea id="content" name="content" th:text="${entry.content()}"
+                  placeholder="오늘 한 업무를 입력하세요"></textarea>
+    </div>
+
+    <div class="btns">
+        <button type="submit" class="btn">저장</button>
+        <a class="btn btn-secondary" th:href="@{/worklogs}">취소</a>
+    </div>
+</form>
+</body>
+</html>

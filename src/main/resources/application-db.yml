@@ -1,0 +1,22 @@
+# DB 모드 (worklog.storage=db)
+# MySQL/MariaDB 연결 설정. 접속 정보는 환경변수로 주입 권장.
+spring:
+  datasource:
+    url: ${DB_URL:}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      # 최초 실행 시 테이블 자동 생성이 필요하면 update, 운영 안정화 후엔 validate 권장
+      ddl-auto: ${JPA_DDL_AUTO:}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    show-sql: false
+
+# 참고: 로컬에서 DB 없이 빠르게 테스트하려면 H2 로 대체 가능
+#   DB_URL=jdbc:h2:mem:worklog;MODE=MySQL
+#   DB_USERNAME=sa  DB_PASSWORD=(빈값)
+#   driver-class-name 은 자동 감지되므로 생략해도 됨

@@ -1,0 +1,42 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.2'
+    id 'io.spring.dependency-management' version '1.1.6'
+}
+
+group = 'com.example'
+version = '1.0.0'
+
+java {
+    // Java 21 (Spring Boot 3.x 는 17 이상 지원)
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // 웹 (RestClient 사용, 테스트용 REST 엔드포인트)
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // 화면 (Thymeleaf)
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+
+    // DB 버전 (worklog.storage=db 일 때 사용)
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    runtimeOnly 'com.mysql:mysql-connector-j'          // MySQL/MariaDB 드라이버
+    runtimeOnly 'com.h2database:h2'                     // 로컬 테스트용 (선택)
+
+    // 엑셀 파싱: poi-ooxml 하나면 .xls(HSSF)와 .xlsx(XSSF) 모두 처리
+    implementation 'org.apache.poi:poi-ooxml:5.2.5'
+
+    // 테스트
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>업무일지 목록</title>
+    <style>
+        body { font-family: -apple-system, "Malgun Gothic", sans-serif; max-width: 900px; margin: 30px auto; padding: 0 16px; color: #222; }
+        h1 { font-size: 20px; }
+        .nav { display: flex; align-items: center; gap: 16px; margin: 16px 0; }
+        .nav a { text-decoration: none; color: #2b6cb0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: top; font-size: 14px; }
+        th { background: #f7f7f7; }
+        .content { white-space: pre-wrap; }
+        .actions a, .actions button { font-size: 13px; margin-right: 6px; }
+        .btn { display: inline-block; padding: 6px 12px; background: #2b6cb0; color: #fff; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; }
+        .btn-danger { background: #c53030; }
+        .btn-sm { padding: 3px 8px; font-size: 12px; }
+        .empty { color: #888; margin-top: 16px; }
+        .top { display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+<div class="top">
+    <h1>업무일지</h1>
+    <a class="btn" th:href="@{/worklogs/form}">+ 새 업무일지</a>
+</div>
+
+<div class="nav">
+    <a th:href="@{/worklogs(year=${prev.year}, month=${prev.monthValue})}">◀ 이전달</a>
+    <strong th:text="${year} + '년 ' + ${month} + '월'">2026년 7월</strong>
+    <a th:href="@{/worklogs(year=${next.year}, month=${next.monthValue})}">다음달 ▶</a>
+</div>
+
+<div th:if="${entries.isEmpty()}" class="empty">이 달에 작성된 업무일지가 없습니다.</div>
+
+<table th:unless="${entries.isEmpty()}">
+    <thead>
+    <tr>
+        <th style="width:110px;">날짜</th>
+        <th style="width:80px;">업무유형</th>
+        <th style="width:180px;">프로젝트</th>
+        <th>업무 내용</th>
+        <th style="width:120px;">관리</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="e : ${entries}">
+        <td th:text="${e.date()}">2026-07-24</td>
+        <td th:text="${e.type()}">프로젝트</td>
+        <td th:text="${e.project()}">프로젝트명</td>
+        <td class="content" th:text="${e.content()}">업무 내용</td>
+        <td class="actions">
+            <a class="btn btn-sm" th:href="@{/worklogs/form(date=${e.date()})}">수정</a>
+            <form th:action="@{/worklogs/delete}" method="post" style="display:inline;"
+                  onsubmit="return confirm('삭제하시겠습니까?');">
+                <input type="hidden" name="date" th:value="${e.date()}"/>
+                <button type="submit" class="btn btn-sm btn-danger">삭제</button>
+            </form>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

@@ -1,0 +1,8 @@
+# 엑셀 모드 (worklog.storage=excel)
+# DB 를 쓰지 않으므로 JPA/DataSource 자동설정을 제외해 DB 없이도 정상 기동한다.
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
