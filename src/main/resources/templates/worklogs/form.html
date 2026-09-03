@@ -12,6 +12,11 @@
         }
         textarea { min-height: 140px; resize: vertical; }
         .row { margin-bottom: 8px; }
+        .range { display: flex; gap: 10px; align-items: center; }
+        .range > div { flex: 1; }
+        .checkbox-row { margin-top: 10px; display: flex; align-items: center; gap: 6px; }
+        .checkbox-row input { width: auto; }
+        .checkbox-row label { margin: 0; font-weight: normal; }
         .btns { margin-top: 20px; display: flex; gap: 10px; }
         .btn { display: inline-block; padding: 8px 16px; background: #2b6cb0; color: #fff; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; font-size: 14px; }
         .btn-secondary { background: #718096; }
@@ -21,14 +26,34 @@
 <body>
 <h1 th:text="${editMode} ? '업무일지 수정' : '업무일지 작성'">업무일지 작성</h1>
 
-<form th:action="@{/worklogs/save}" method="post">
-    <div class="row">
+<form th:action="@{/worklogs/save}" method="post" id="worklogForm">
+    <!-- 수정/신규 구분 플래그 -->
+    <input type="hidden" name="editMode" th:value="${editMode}"/>
+
+    <!-- ── 수정 모드: 단일 날짜(읽기전용) ── -->
+    <div class="row" th:if="${editMode}">
         <label for="date">날짜</label>
-        <!-- 수정 모드에서는 날짜를 키로 쓰므로 읽기전용 -->
-        <input type="date" id="date" name="date"
-               th:value="${entry.date()}"
-               th:readonly="${editMode}" required/>
-        <div class="hint" th:if="${editMode}">수정 모드에서는 날짜를 변경할 수 없습니다.</div>
+        <input type="date" id="date" name="date" th:value="${entry.date()}" readonly required/>
+        <div class="hint">수정 모드에서는 날짜를 변경할 수 없습니다.</div>
+    </div>
+
+    <!-- ── 신규 모드: 날짜 범위 ── -->
+    <div class="row" th:unless="${editMode}">
+        <label>기간 (시작일 ~ 종료일)</label>
+        <div class="range">
+            <div>
+                <input type="date" id="startDate" name="startDate" th:value="${entry.date()}" required/>
+            </div>
+            <span>~</span>
+            <div>
+                <input type="date" id="endDate" name="endDate" th:value="${entry.date()}" required/>
+            </div>
+        </div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="skipWeekendHoliday" name="skipWeekendHoliday" value="true" checked/>
+            <label for="skipWeekendHoliday">주말·공휴일 제외하고 저장</label>
+        </div>
+        <div class="hint">기간 내 각 날짜에 아래 내용이 동일하게 저장됩니다. 하루만 등록하려면 시작일과 종료일을 같게 두세요.</div>
     </div>
 
     <div class="row">
@@ -58,5 +83,17 @@
         <a class="btn btn-secondary" th:href="@{/worklogs}">취소</a>
     </div>
 </form>
+
+<!-- 신규 모드에서 종료일이 시작일보다 빠르면 제출 막기 -->
+<script th:unless="${editMode}">
+    document.getElementById('worklogForm').addEventListener('submit', function (e) {
+        var s = document.getElementById('startDate').value;
+        var en = document.getElementById('endDate').value;
+        if (s && en && en < s) {
+            e.preventDefault();
+            alert('종료일이 시작일보다 빠릅니다. 다시 확인해 주세요.');
+        }
+    });
+</script>
 </body>
 </html>

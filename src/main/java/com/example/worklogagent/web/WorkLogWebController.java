@@ -7,19 +7,21 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 업무일지 화면 컨트롤러 (Thymeleaf).
  *
  *   GET  /worklogs?year=&month=   → 월별 목록
  *   GET  /worklogs/form?date=     → 작성/수정 폼 (date 있으면 수정)
- *   POST /worklogs/save           → 저장(추가/수정)
+ *   POST /worklogs/save           → 저장 (수정=단일, 신규=범위)
  *   POST /worklogs/delete         → 삭제
  */
 @Controller
@@ -76,20 +78,50 @@ public class WorkLogWebController {
         return "worklogs/form";
     }
 
-    /** 저장 (추가/수정 공용). 날짜가 같으면 덮어씀. */
+    /**
+     * 저장.
+     *  - 수정 모드(editMode=true): 해당 단일 날짜만 덮어쓰기
+     *  - 신규 모드: startDate~endDate 범위의 각 날짜에 같은 내용 저장
+     *              (이미 작성된 날짜는 건너뛰고 alert 로 안내)
+     */
     @PostMapping("/worklogs/save")
-    public String save(@RequestParam String date,
+    public String save(@RequestParam(required = false, defaultValue = "false") boolean editMode,
+                       @RequestParam(required = false) String date,        // 수정 모드용 단일 날짜
+                       @RequestParam(required = false) String startDate,   // 신규 모드용 시작일
+                       @RequestParam(required = false) String endDate,     // 신규 모드용 종료일
+                       @RequestParam(required = false, defaultValue = "false") boolean skipWeekendHoliday,
                        @RequestParam(required = false) String type,
                        @RequestParam(required = false) String project,
-                       @RequestParam(required = false) String content) {
-        LocalDate d = LocalDate.parse(date, ISO);
-        service.save(new WorkLogEntry(
-                d,
-                nullToEmpty(type),
-                nullToEmpty(project),
-                nullToEmpty(content)));
-        // 저장 후 그 달 목록으로
-        return "redirect:/worklogs?year=" + d.getYear() + "&month=" + d.getMonthValue();
+                       @RequestParam(required = false) String content,
+                       RedirectAttributes ra) {
+
+        if (editMode) {
+            // 단일 날짜 수정
+            LocalDate d = LocalDate.parse(date, ISO);
+            service.save(new WorkLogEntry(d, nullToEmpty(type), nullToEmpty(project), nullToEmpty(content)));
+            return "redirect:/worklogs?year=" + d.getYear() + "&month=" + d.getMonthValue();
+        }
+
+        // 신규 범위 저장
+        LocalDate start = LocalDate.parse(startDate, ISO);
+        LocalDate end = LocalDate.parse(endDate, ISO);
+
+        WorkLogService.RangeSaveResult result = service.saveRange(
+                start, end, nullToEmpty(type), nullToEmpty(project), nullToEmpty(content),
+                skipWeekendHoliday);
+
+        // 건너뛴(이미 작성된) 날짜가 있으면 목록 화면에서 alert 로 보여주도록 flash 로 전달
+        if (!result.skippedDates().isEmpty()) {
+            String skipped = result.skippedDates().stream()
+                    .map(LocalDate::toString)
+                    .collect(Collectors.joining(", "));
+            ra.addFlashAttribute("skippedMessage",
+                    "이미 작성된 일지가 있어 아래 날짜는 저장하지 않았습니다:\n" + skipped);
+        }
+
+        // 시작일이 속한 달의 목록으로 이동
+        LocalDate first = start.isAfter(end) ? end : start;
+        return "redirect:/worklogs?year=" + first.getYear() + "&month=" + first.getMonthValue();
     }
 
     /** 삭제 */

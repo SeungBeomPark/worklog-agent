@@ -61,5 +61,11 @@
     </tr>
     </tbody>
 </table>
+<!-- 범위 저장 시 건너뛴(이미 작성된) 날짜가 있으면 alert 로 안내 -->
+<script th:if="${skippedMessage}" th:inline="javascript">
+    /*<![CDATA[*/
+    alert([[${skippedMessage}]]);
+    /*]]>*/
+</script>
 </body>
 </html>
