@@ -120,6 +120,59 @@ OPENAI_MODEL=gpt-4o                 # 생략 시 기본값 사용
 - 새 제공자(예: Gemini)를 추가하려면 `LlmProvider` 인터페이스를 구현한 클래스에
   `@Component` 만 붙이고 `providerName()` 을 정해주면 자동으로 편입됩니다.
 
+## MCP 서버 (Claude Desktop 연동)
+
+업무일지를 MCP 도구로 노출해, Claude Desktop 에서 자연어로 조회/작성/삭제할 수 있습니다.
+
+### 노출되는 도구
+- `getWorklog` — 특정 날짜 한 건 조회
+- `searchWorklog` — 기간(시작~종료) 목록 조회 (요약/확인용)
+- `writeWorklog` — 작성/수정 (같은 날짜는 덮어씀)
+- `deleteWorklog` — 삭제
+
+### 1) 빌드
+```bash
+./gradlew clean bootJar
+# 산출물: build/libs/worklog-agent-1.0.0.jar
+```
+
+### 2) Claude Desktop 설정
+`claude_desktop_config.json` 에 아래를 추가합니다.
+(위치: Windows `%APPDATA%\Claude\claude_desktop_config.json`,
+ macOS `~/Library/Application Support/Claude/claude_desktop_config.json`)
+
+```json
+{
+  "mcpServers": {
+    "worklog-agent": {
+      "command": "java",
+      "args": [
+        "-jar",
+        "C:/path/to/worklog-agent-1.0.0.jar",
+        "--spring.profiles.active=mcp,db"
+      ],
+      "env": {
+        "WORKLOG_DIR": "C:/worklog",
+        "DB_URL": "jdbc:mysql://localhost:3306/worklog?serverTimezone=Asia/Seoul&characterEncoding=UTF-8",
+        "DB_USERNAME": "worklog",
+        "DB_PASSWORD": "****"
+      }
+    }
+  }
+}
+```
+
+- `--spring.profiles.active=mcp,db` : MCP(STDIO) 모드 + DB 저장소(현재 .env 구성에 맞춤).
+  엑셀을 쓰려면 `mcp,excel` 로 바꾸고 `env` 에 `WORKLOG_DIR` 만 두면 됩니다.
+- 경로/접속정보는 실제 환경에 맞게 수정하세요. 설정 후 Claude Desktop 을 재시작하면 도구가 인식됩니다.
+
+### 동작 방식 / 주의
+- MCP 모드는 STDIO 로 통신하므로, 이 프로파일에서는 **웹 서버를 띄우지 않고**
+  **콘솔 로그를 끕니다**(stdout 을 MCP 프로토콜 전용으로 써야 하기 때문). 로그는 파일로 남습니다.
+- 실제 저장/조회는 기존 `WorkLogService` 에 위임하므로, 화면(웹)과 MCP 가 **같은 데이터**를 봅니다.
+- 웹 화면과 MCP 를 동시에 쓰려면 프로세스를 2개(웹용 + MCP STDIO용) 띄우면 됩니다.
+  DB 저장소면 데이터가 자연히 공유됩니다.
+
 ## 운영 시 주의
 
 - **앱이 24시간 떠 있어야** 스케줄이 동작합니다. 상시 서버에 배포하세요.

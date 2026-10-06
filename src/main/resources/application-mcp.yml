@@ -1,0 +1,24 @@
+# MCP 모드 (Claude Desktop 등과 STDIO 로 통신)
+# 실행: --spring.profiles.active=mcp (+ 저장소 프로파일, 예: mcp,db)
+#
+# 중요: STDIO 전송은 stdout 을 MCP 프로토콜(JSON-RPC) 전용으로 쓴다.
+#   따라서 (1) 웹 서버를 끄고 (2) 콘솔 로그가 stdout 으로 나가지 않게 해야 한다.
+#   로그가 stdout 에 섞이면 Claude Desktop 이 메시지를 파싱하지 못한다.
+
+spring:
+  main:
+    # 웹 서버를 띄우지 않음 (MCP STDIO 전용 프로세스)
+    web-application-type: none
+    banner-mode: off
+  ai:
+    mcp:
+      server:
+        # STDIO 전송 활성화 (Claude Desktop 연결용)
+        stdio: true
+
+# 콘솔(stdout) 로깅을 끄고 파일로만 남긴다 → stdout 오염 방지
+logging:
+  pattern:
+    console: ""
+  file:
+    name: ${WORKLOG_MCP_LOG:worklog-mcp.log}

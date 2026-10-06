@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.3.2'
+    id 'org.springframework.boot' version '3.4.5'
     id 'io.spring.dependency-management' version '1.1.6'
 }
 
@@ -8,14 +8,25 @@ group = 'com.example'
 version = '1.0.0'
 
 java {
-    // Java 21 (Spring Boot 3.x 는 17 이상 지원)
+    // Java 21 (Spring Boot 3.x 는 17 이상, Spring AI MCP 는 21 권장)
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
+ext {
+    // Spring AI 버전 (MCP 서버 스타터)
+    springAiVersion = '1.0.9'
+}
+
 repositories {
     mavenCentral()
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+    }
 }
 
 dependencies {
@@ -32,6 +43,9 @@ dependencies {
 
     // 엑셀 파싱: poi-ooxml 하나면 .xls(HSSF)와 .xlsx(XSSF) 모두 처리
     implementation 'org.apache.poi:poi-ooxml:5.2.5'
+
+    // MCP 서버 (Claude Desktop 등에 업무일지 도구를 노출)
+    implementation 'org.springframework.ai:spring-ai-starter-mcp-server-webmvc'
 
     // 테스트
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

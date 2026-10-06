@@ -9,6 +9,13 @@ worklog:
 spring:
   profiles:
     active: ${worklog.storage}
+  ai:
+    mcp:
+      server:
+        name: worklog-agent
+        version: 1.0.0
+        # 기본은 STDIO 꺼짐(웹 모드). Claude Desktop 연결 시 mcp 프로파일이 켠다.
+        stdio: false
 
 app:
   worklog:
