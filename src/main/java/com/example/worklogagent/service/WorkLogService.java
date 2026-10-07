@@ -5,8 +5,10 @@ import com.example.worklogagent.repository.WorkLogRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -93,5 +95,51 @@ public class WorkLogService {
             cursor = cursor.plusDays(1);
         }
         return new RangeSaveResult(saved, skipped);
+    }
+
+    /**
+     * 기간 내 '영업일인데 업무일지가 없는' 날짜 목록을 반환한다.
+     * (주말/공휴일은 애초에 제외하고 영업일만 본다)
+     */
+    public List<LocalDate> findMissingBusinessDays(LocalDate from, LocalDate to) {
+        if (from.isAfter(to)) {
+            LocalDate tmp = from; from = to; to = tmp;
+        }
+        List<LocalDate> missing = new ArrayList<>();
+        LocalDate cursor = from;
+        while (!cursor.isAfter(to)) {
+            if (holidayService.isBusinessDay(cursor)
+                    && repository.findByDate(cursor).isEmpty()) {
+                missing.add(cursor);
+            }
+            cursor = cursor.plusDays(1);
+        }
+        return missing;
+    }
+
+    /**
+     * 기간 내 업무유형별 / 프로젝트별 작성 일수 집계.
+     * key 순서가 유지되도록 LinkedHashMap 사용.
+     */
+    public record WorkLogStats(
+            int totalDays,
+            Map<String, Integer> byType,
+            Map<String, Integer> byProject) {}
+
+    public WorkLogStats statsOfRange(LocalDate from, LocalDate to) {
+        if (from.isAfter(to)) {
+            LocalDate tmp = from; from = to; to = tmp;
+        }
+        List<WorkLogEntry> entries = repository.findByDateRange(from, to);
+
+        Map<String, Integer> byType = new LinkedHashMap<>();
+        Map<String, Integer> byProject = new LinkedHashMap<>();
+        for (WorkLogEntry e : entries) {
+            String type = (e.type() == null || e.type().isBlank()) ? "(미지정)" : e.type();
+            String project = (e.project() == null || e.project().isBlank()) ? "(없음)" : e.project();
+            byType.merge(type, 1, Integer::sum);
+            byProject.merge(project, 1, Integer::sum);
+        }
+        return new WorkLogStats(entries.size(), byType, byProject);
     }
 }

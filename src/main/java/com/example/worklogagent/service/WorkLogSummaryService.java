@@ -28,14 +28,19 @@ public class WorkLogSummaryService {
     public String summarizeWeekOf(LocalDate anyDayInWeek) {
         LocalDate monday = anyDayInWeek.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate friday = monday.plusDays(4);
+        return summarizeRange(monday, friday);
+    }
 
-        List<WorkLogEntry> entries = repository.findByDateRange(monday, friday);
-        if (entries.isEmpty()) {
-            return "이번 주(%s ~ %s)에 작성된 업무일지가 없습니다."
-                    .formatted(monday, friday);
+    /** 임의 기간(from~to)을 앱 내부 LLM 으로 요약한다. 월간 요약 등에 재사용. */
+    public String summarizeRange(LocalDate from, LocalDate to) {
+        if (from.isAfter(to)) {
+            LocalDate tmp = from; from = to; to = tmp;
         }
-
-        String prompt = buildPrompt(monday, friday, entries);
+        List<WorkLogEntry> entries = repository.findByDateRange(from, to);
+        if (entries.isEmpty()) {
+            return "%s ~ %s 기간에 작성된 업무일지가 없습니다.".formatted(from, to);
+        }
+        String prompt = buildPrompt(from, to, entries);
         return llmClient.summarize(prompt);
     }
 
