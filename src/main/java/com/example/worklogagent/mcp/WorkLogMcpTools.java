@@ -1,6 +1,7 @@
 package com.example.worklogagent.mcp;
 
 import com.example.worklogagent.model.WorkLogEntry;
+import com.example.worklogagent.service.ReportService;
 import com.example.worklogagent.service.WorkLogService;
 import com.example.worklogagent.service.WorkLogSummaryService;
 import org.springframework.ai.tool.annotation.Tool;
@@ -30,10 +31,14 @@ public class WorkLogMcpTools {
 
     private final WorkLogService service;
     private final WorkLogSummaryService summaryService;
+    private final ReportService reportService;
 
-    public WorkLogMcpTools(WorkLogService service, WorkLogSummaryService summaryService) {
+    public WorkLogMcpTools(WorkLogService service,
+                           WorkLogSummaryService summaryService,
+                           ReportService reportService) {
         this.service = service;
         this.summaryService = summaryService;
+        this.reportService = reportService;
     }
 
     // ── 조회 ──
@@ -174,6 +179,26 @@ public class WorkLogMcpTools {
             sb.append("- %s: %d일\n".formatted(e.getKey(), e.getValue()));
         }
         return sb.toString().trim();
+    }
+
+    // ── 리포트 내보내기 ──
+    @Tool(description = "시작일~종료일(yyyy-MM-dd) 범위의 업무 리포트를 생성한다. "
+            + "요약과 유형별/프로젝트별 통계를 묶은 Markdown 을 반환하며, "
+            + "saveFile=true 면 서버의 리포트 폴더에 .md 파일로도 저장하고 그 경로를 함께 알려준다. "
+            + "'이번 달 업무 보고서 만들어줘' 같은 요청에 사용한다.")
+    public String exportReport(
+            @ToolParam(description = "시작일 (yyyy-MM-dd)") String startDate,
+            @ToolParam(description = "종료일 (yyyy-MM-dd)") String endDate,
+            @ToolParam(description = ".md 파일로도 저장할지 (기본 false)", required = false) Boolean saveFile) {
+        LocalDate from = LocalDate.parse(startDate, ISO);
+        LocalDate to = LocalDate.parse(endDate, ISO);
+        boolean save = saveFile != null && saveFile;
+
+        ReportService.Report report = reportService.generate(from, to, save);
+        if (report.savedPath() != null) {
+            return report.markdown() + "\n\n---\n저장된 파일: " + report.savedPath();
+        }
+        return report.markdown();
     }
 
     // ── 내부 유틸 ──

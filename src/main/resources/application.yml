@@ -56,6 +56,10 @@ app:
     # 공공데이터포털에서 발급받은 서비스키 (디코딩된 일반 키 권장)
     service-key: ${HOLIDAY_API_KEY:}
 
+  report:
+    # exportReport 도구가 .md 파일을 저장할 폴더
+    directory: ${REPORT_DIR:}
+
 logging:
   level:
     com.example.worklogagent: INFO
